@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+  <title>ChatPDF</title>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/autosize/dist/autosize.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/autosize/4.0.2/autosize.min.js"></script>
+    <style>
+      body {
+        font-family: monospace;
+        background-color: #2e3133;
+        margin: 10;
+        padding: 0;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+      #uploadPanel {
+        width: 300px;
+        color: #ffffff;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      #chatbox {
+        margin-left: 213px;
+        margin-right: auto;
+        width: 60%;
+        margin-top: 60px;
+      }
+      #userInput {
+        margin-left: 210px;
+        display: flex;
+        justify-content: flex-end;
+        width: 70%;
+        margin-top: 20px;
+        resize: both;
+        overflow: auto;
+      }
+      #textInput {
+        position: static;
+        bottom: 5px;
+        left: 100px;
+        background-color: #636363;
+        color: rgba(255, 255, 255, 0.774);
+        width: 100%;
+        border: 1px solid black;
+        border-bottom: 2px solid black;
+        font-family: monospace;
+        font-size: 17px;
+      }
+      .userText {
+        color: rgba(255, 255, 255, 0.8);
+        font-family: monospace;
+        font-size: 17px;
+        text-align: left;
+        line-height: 30px;
+      }
+      .botText {
+        background-color: #4b4b4b;
+        color: rgba(253, 253, 253, 0.8);
+        font-family: monospace;
+        font-size: 17px;
+        text-align: left;
+        line-height: 30px;
+      }
+      #tidbit {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 300px;
+      }
+      .boxed1 {
+        margin-right: auto;
+        float: left;
+        width: 25%;
+        background-color: #242424;
+        color: #ffffff;
+        position: fixed;
+        overflow-y: auto;
+        height: calc(100vh - 0px);
+        top: 0;
+        bottom: 0;
+      }
+      .boxdiv{
+        margin-top: 30px;
+        background-color: #000000;
+      }
+      .box {
+        border: 2px solid 52525892;
+        
+      }
+      #uploadPanel .form-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      #uploadPanel input[type="file"] {
+        display: none;
+      }
+      #uploadPanel label {
+        background-color: #383838;
+        padding: 10px 15px;
+        border-radius: 2px;
+        cursor: pointer;
+        margin-bottom: 10px;
+      }
+      #uploadPanel input[type="submit"] {
+        background-color: #383838;
+        color: #ffffff;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 2px;
+        cursor: pointer;
+      }
+      .navbar {
+      overflow: hidden;
+      background-color: #2e3133;
+      color: #ffffff;
+      text-align: center;
+      font-size: 38px;
+      position: relative;
+      top: 0;
+      margin-left: 25.3%;
+      margin-top: 40px;
+    }
+
+    .navbar a:hover {
+      background: #ddd;
+      color: black;
+    }
+      .boxed2 {
+        margin-left: auto;
+        float: right;
+        width: 80%;
+        color: #ffffff;
+        margin-top: 26%;
+        overflow-y: auto;
+        right: 0;
+        bottom: 3.5%;
+      }
+      .fileLabel {
+        background-color: #12b7bd;
+        color: #ffffff;
+        padding: 10px 15px;
+        border-radius: 2px;
+        cursor: pointer;
+        margin-bottom: 10px;
+        display: inline-block;
+      }
+
+      .fileLabel span {
+        margin-right: 10px;
+      }
+
+      .fileInput {
+        display: none;
+      }
+
+      .error {
+        color: red;
+      }
+          
+    </style>        
+    
+  </head>
+  <header>
+    <nav class="navbar">
+        AI Chatbot
+    </nav>
+  </header>
+  <body>
+    <div class="container">
+        <div class="boxed1">
+            <div class="form-group" style="margin-left: 20px;">
+                <form method="POST" enctype="multipart/form-data"><br><br><br><br>
+                  {{ form.csrf_token }}
+                  <p>
+                    <label for="file" class="fileLabel">
+                      <span>Choose PDF File</span>
+                      <input type="file" id="file" name="file" class="fileInput">
+                    </label>
+                    {% for error in form.file.errors %}
+                      <span class="error">{{ error }}</span><br>
+                    {% endfor %}
+                  </p>
+                  <p>{{ form.submit() }}</p>
+                  <p class="pboarder">
+                    {% if filename %}
+                      {{ filename }}
+                    {% else %}
+                      No file uploaded yet.
+                    {% endif %}
+                  </p>
+                </form>
+          </div>  
+        </div>
+          <div class="boxed2">
+            <div>
+              <div id="chatbox">
+                <p class="botText">
+                  <span>Hey! How can I help you?</span>
+                </p>
+              </div>
+              <div id="userInput">
+                <textarea id="textInput" style="border: 0;" class="autosize" type="text" name="msg" placeholder="Enter question here..."></textarea>
+              </div>
+            </div>
+          </div>
+          <script>
+            var disable_input = false;
+          
+            function getBotResponse() {
+              if (disable_input) {
+                return;
+              }
+              var rawText = $("#textInput").val();
+          
+              if (rawText === "") {
+                return;
+              }
+          
+              $("#textInput").val("");
+              $("#textInput").addClass("disable_input");
+              $("#textInput").prop("disabled", true);
+              autosize(document.querySelectorAll('.autosize'));
+          
+              var userHtml = '<p class="userText"><span>' + rawText.replace(/\n/g, "<br>") + "</span></p>";
+              $("#chatbox").append(userHtml);
+              document.getElementById("userInput").scrollIntoView({ block: "start", behavior: "smooth" });
+              $.get("/get", { msg: rawText }).done(function(data) {
+                var botHtml = '<p class="botText"><span>' + data.replace(/\n/g, "<br>") + "</span></p>";
+                $("#chatbox").append(botHtml);
+                document.getElementById("userInput").scrollIntoView({ block: "start", behavior: "smooth" });
+          
+                disable_input = false;
+                $("#textInput").removeClass("disable_input");
+                $("#textInput").prop("disabled", false);
+              });
+            }
+          
+            $("#textInput").keydown(function(e) {
+              if (e.which == 13) {
+                if (!e.shiftKey) {
+                  e.preventDefault();
+                  getBotResponse();
+                } else {
+                  var textInput = $("#textInput");
+                }
+              }
+            });
+          
+            $("form").submit(function() {
+              var selectedFile = $("input[type='file']").val().split('\\').pop();
+              if (selectedFile) {
+                Cookies.set("selected_file", selectedFile);
+                $(".pboarder").html(selectedFile);
+              }
+            });
+          </script>
+          
+    </div>
+  </body>
+</html>
